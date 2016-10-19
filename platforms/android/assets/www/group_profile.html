@@ -1,0 +1,250 @@
+<html>
+    <head>
+	    <title>Grupos</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+    </head>
+    <body>
+        <div data-role="page" id="group_profile">
+			<div data-role="header" data-position="fixed">
+				<h1></h1>
+				<a href="#" id="barBtnBack" data-role="button" data-icon="back" data-iconpos="notext" class="ui-btn-left">back</a>
+				<a href="#" id="barBtnEdit" data-role="button" data-icon="edit" data-iconpos="notext" class="ui-btn-right">edit</a>
+			</div>
+			<div data-role="main">
+				<img src="group_icon.jpg">
+				<a href="#" id="btnExitGroup" data-role="button">Abandonar grupo</a>
+				<div>
+					<h1 id="tvGroupName"></h1>
+					<h5 id="titDescription">Descripcion:</h5>
+					<h4 id="tvGroupDescription"></h4>
+				</div>
+				<ul data-role="listview" data-inset="false" id="membersList">
+					
+				</ul>
+				<button id="btnAddMember" class="floatingBtn">+</button>
+			</div>
+			
+			<div data-role="popup" id="popup">
+				<p id="message"><p>
+			</div>
+			
+			<div data-role="popup" id="exitPopup">
+				<h1>Salir del grupo?</h1>
+				<button onClick="exitGroup(1);">Si</button>
+				<button onClick="exitGroup(0);">No</button>
+			</div>
+			
+			<script type="text/x-handlebars-template" id="members_list_template">
+				{{# each users}}
+					<li style="margin: 5px;" id="{{@index}}">
+						<a href="#">
+							<img src="user_icon.jpg" style="border-radius: 100%;" >
+							<h2>{{userName}}</h2>
+							<p>{{nickName}}</p>
+						</a>
+					</li>
+				{{/ each}}
+			</script>
+			
+			<!-- END -->
+			<script type="text/javascript" >
+				var jsonGroup;
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					/*if (data.prevPage.attr('id') == 'groups_page') {
+						saveUser = true;
+					}*/
+				});
+			
+				$(document).on("pagecreate", "#group_profile", function(e){
+					console.log("group profile");
+					
+					$("head").append('<link rel="stylesheet" href="css/floatingbutton_style.css">');
+					$("#btnAddMember").removeClass().addClass("floatingBtn");// ELIMINA LES CLASES STANDARD DE JQuery Mobile I APLICA LA PROPIA
+					
+					
+					jsonGroup = Storage.getCurrentGroup();
+					
+					loadMemberList();
+										
+					$("div[data-role=header] h1").text(jsonGroup["groupName"]);
+					$("#tvGroupName").text(jsonGroup["groupName"]);
+					$("#tvGroupDescription").text(jsonGroup["groupDescription"]);
+				});
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					window.location = "groups.html";
+				}, false);
+				
+				$("#barBtnBack").bind("click", function(event){
+					console.log("back button");					
+					window.location = "events.html";
+				});
+				$("#barBtnEdit").bind("click", function(){
+					console.log("edit button");
+					
+					$("#membersList").remove();
+					
+					$("#tvGroupName").replaceWith('<h5 id="titGroupName" style="margin-bottom:1px;">Nombre</h5><input id="inGroupName" type="text" style="margin-top:1px;width:100%;">');
+					$("#inGroupName").val(jsonGroup["groupName"]);
+					
+					$("#titDescription").remove();
+					$("#tvGroupDescription").replaceWith('<h5 id="titGroupDescription" style="margin-bottom:1px;">Descripción</h5><textarea id="inGroupDescription" style="margin-top:1px;width:100%;">');
+					$("#inGroupDescription").val(jsonGroup["groupDescription"]);
+					
+					$('<div id="btns"><a href="#" id="barBtnCancel" data-role="button" data-icon="delete" data-iconpos="notext">delete</a><a href="#" id="barBtnCheck" data-role="button" data-icon="check" data-iconpos="notext">check</a></div>').insertAfter("#inGroupDescription");
+					
+					$("div[data-role=main] div").trigger('create');
+					
+					$("#barBtnCancel").bind("click", function(event){
+						location.reload();
+					});
+					$("#barBtnCheck").bind("click", function(){
+						if ($("#inGroupName").val() != "") {
+						
+							jsonEvent["groupName"] = $("#inGroupName").val();
+							jsonEvent["groupDescription"] = $("#inGroupDescription").val();
+							Storage.setCurrentGroup(jsonGroup);
+						
+							$.ajax({
+								type: "GET",
+								url: "http://mariocarbonell.es/runner/update_group.php",
+								data: {
+									"groupId":jsonGroup["groupId"],"groupName":jsonGroup["groupName"],"groupDescription":jsonGroup["groupDescription"]
+								},
+								crossDomain: true,
+								dataType: "jsonp",
+								beforeSend: function() {
+									$.mobile.loading('show');
+								},
+								success: function(data) {
+									location.reload();
+								},
+								error: function(data) {
+									console.log("error: " + data);
+									console.log(data);
+								},
+								complete: function() {
+									$.mobile.loading('hide');
+								}
+							});
+						} else {
+							$("#message").text("El campo nombre es obligatorio");
+							$("#popup").popup("open");
+						}
+					});
+					
+				});
+				
+				$("#btnExitGroup").bind("click", function(event){
+					$("#exitPopup").popup("open");
+				});
+				$("#btnAddMember").on("click", function(event){						
+						window.location = "add_member.html";
+					});
+				
+				function loadMemberList() {
+					$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/get_members.php",
+						data: {"groupId":jsonGroup["groupId"]},
+						crossDomain: true,
+						dataType: "jsonp",
+						beforeSend: function(data) {
+							//console.log("beforeSend");
+							//console.log(data);
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							console.log("success");
+							data = JSON.parse(data);
+							createUserList(data);
+						},
+						error: function(data) {
+							console.log("error");
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+				}
+				
+				function createUserList(data) {
+					source = $("#members_list_template").html();
+					
+					var template = Handlebars.compile(source);
+					
+					var ctx = {};
+					ctx.users = data;
+					var result = template(ctx);
+					//console.log("result: " + result);
+					$("#membersList").append(result).listview('refresh');
+				}
+				function exitGroup(val) {
+					if (val == 1) {
+						$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/exit_group.php",
+						data: {
+							"groupId":jsonGroup["groupId"],"userId":Storage.getUser().userId
+						},
+						crossDomain: true,
+						dataType: "jsonp",
+						beforeSend: function(data) {
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							window.location = "groups.html";
+						},
+						error: function(data) {
+							console.log("error");
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+					} else {
+						location.reload();
+					}
+				}
+			</script>			
+			<style type="text/css">
+				#btns {
+					/*display: block;*/
+					margin: 0 auto;
+				}
+				#btns a{
+					display: inline-block;
+					/*margin: 0 auto;*/
+					width:20%;
+				}
+			
+				div[data-role=main] > img {
+					border-radius: 100%;
+					display: block;
+					margin: 0 auto;
+				}
+				#titDescription{
+					margin-bottom:0px;
+				}
+				#tvGroupDescription {
+					margin-top:0px;
+				}
+			</style>
+		</div>
+		
+    </body>
+</html>

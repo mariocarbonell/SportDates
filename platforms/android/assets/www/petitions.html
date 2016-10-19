@@ -1,0 +1,148 @@
+<html>
+    <head>
+	    <title>Grupos</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+		
+		
+    </head>
+    <body>
+        <div data-role="page" id="petitions_page">
+			<div data-role="header" data-position="fixed">
+				<a href="#" id="barBtnHome" data-role="button" data-icon="home" data-iconpos="notext" class="ui-btn-left">home</a>
+				<h1>Notificaciones</h1>
+			</div>
+			<div data-role="main">
+				<ul data-role="listview" data-inset="false" id="petitionsList">
+					
+				</ul>
+			</div>
+			
+			<!-- END -->
+			<script type="text/x-handlebars-template" id="petitions_list_template">
+				{{# each petition}}
+					<li style="margin: 5px;" id="{{@index}}">
+						<img src="user_icon.jpg" style="border-radius: 100%;" >
+						<h1>{{groupName}}</h1>
+						<p>{{groupDescription}}</p>
+						<h2>{{creatorUser}}</h2>
+						<div position="relative" align="center" data-role="controlgroup" data-type="horizontal" >
+						
+							<a href="#" id="responseNo" data-role="button" data-icon="delete" data-iconpos="notext" onClick="resolvePetition(0,{{@index}})">No</a>
+							<a href="#" id="responseSi" data-role="button" data-icon="check" data-iconpos="notext" onClick="resolvePetition(1,{{@index}})">Si</a>
+						</div>
+						
+					</li>
+				{{/ each}}
+			</script>
+			<script src="js/handlebars-v4.0.5.js"></script>
+			<script type="text/javascript" >
+				var JSONstr;
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					
+				});
+			
+				$(document).on("pagecreate", "#petitions_page", function(event){
+					console.log("petitions page");
+					loadPetitions();
+				});	
+					
+				function loadPetitions() {
+					$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/get_petitions.php",
+						data: {"userId":Storage.getUser().userId},
+						crossDomain: true,
+						dataType: "jsonp",
+						beforeSend: function(data) {
+							//console.log("beforeSend");
+							//console.log(data);
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							console.log("success");
+							JSONstr = JSON.parse(data);
+							createPetitionList();
+						},
+						error: function(data) {
+							console.log("error");
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+				};
+				
+				function createPetitionList() {
+					source = $("#petitions_list_template").html();
+					
+					var template = Handlebars.compile(source);
+					
+					var ctx = {};
+					ctx.petition = JSONstr;
+					var result = template(ctx);
+					//console.log("result: " + result);
+					$("#petitionsList").append(result).listview('refresh');
+					$("#petitionsList").trigger('create');
+					
+				}
+			
+				
+				function resolvePetition(status,pos) {
+					var str = JSONstr[pos];
+					$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/resolve_petition.php",
+						data: {
+							"userId":Storage.getUser().userId,
+							"petitionId":str["petitionId"],
+							"groupId":str["groupId"],
+							"status":status
+						},
+						crossDomain: true,
+						dataType: "jsonp",
+						beforeSend: function(data) {
+							//console.log("beforeSend");
+							//console.log(data);
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							console.log("success");
+							$("#petitionsList #" + pos).remove();
+						},
+						error: function(data) {
+							console.log("error");
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+				}
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					window.location = "groups.html";
+				}, false);
+				$("#barBtnHome").bind("click", function(event){
+					window.location = "groups.html";
+				});
+			</script>
+			
+		</div>
+		
+    </body>
+</html>

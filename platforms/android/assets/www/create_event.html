@@ -1,0 +1,118 @@
+<html>
+    <head>
+	    <title>Crear cuenta</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/index.css">
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+    </head>
+    <body>
+	
+		
+        <div data-role="page" id="create_event_page" data-dialog="false">
+			<div data-role="header">
+				<a href="#" id="barBtnBack" data-role="button" data-icon="back" data-iconpos="notext" class="ui-btn-left">home</a>
+				<h1>Crear evento</h1>
+			</div>
+			<div data-role="main">
+				<form id="createForm">
+					<label>Nombre:</label>
+					<input type="text" id="eventName" name="eventName" />
+					<label>Descripción:</label>
+					<input type="text" id="eventDescription" name="eventDescription" />
+					<label>Actividad:</label>
+					<input type="text" id="activityName" name="activityName" />
+					<label>Fecha de inicio:</label>
+					<label>Formato: dd-mm-yyyy</label>
+					<input data-role="date" type="text" id="startTime" name="activityName" />
+					<label>Lugar de inicio:</label>
+					<input type="text" id="startPlace" name="activityName" />
+					
+					
+					<button id="btSubmit">Crear</button>
+				</form>
+			</div>
+			
+			<div data-role="popup" id="popup">
+				<p id="message"><p>
+			</div>
+			
+			<script type="text/javascript" >
+			
+			$(document).on("pagecreate", "#create_event_page", function(event){
+				console.log("create event");
+			
+				$("#btSubmit").bind("click", function(event){
+				
+					var eventName = $("#eventName").val();
+					var eventDescription = $("#eventDescription").val();
+					var activityName = $("#activityName").val();
+					var startTime = $("#startTime").val();
+					var startPlace = $("#startPlace").val();
+				
+					if (eventName.length != 0 && activityName.length != 0 && startTime.length != 0 && startPlace.length != 0) {
+						$.ajax({
+							type: "GET",
+							url: "http://mariocarbonell.es/runner/create_event.php",
+							data: {
+								"eventName":eventName,"eventDescription":eventDescription,"activityName":activityName,"startTime":startTime,"startPlace":startPlace,"groupId":Storage.getCurrentGroup()["groupId"],"userId":Storage.getUser().userId
+							},
+							crossDomain: true,
+							dataType: "jsonp",
+							beforeSend: function(data) {
+								console.log("before send");
+								console.log(data);
+								$.mobile.loading('show');
+							},
+							success: function(data) {
+								
+								if (data == 1) {
+									window.location = "events.html";
+								} else {
+									console.log("success and error: " + data);
+									console.log(data);
+								}
+							},
+							error: function(data) {
+								console.log("error: " + data);
+								console.log(data);
+							},
+							complete: function() {
+								$.mobile.loading('hide');
+							}
+						});
+						
+					} else {
+						$("#message").text("Los campos Nombre, Actividad, Fecha de inicio y Lugar de inicio son obligatorios");
+						$("#popup").popup("open");
+					}
+					return false;
+				});
+			});
+			
+			document.addEventListener("backbutton", function (e) {
+				e.preventDefault();
+				window.location = "events.html";
+			}, false);
+			$("#barBtnBack").bind("click", function(event){
+				/*event.stopPropagation();
+				event.preventDefault();
+				$.mobile.changePage("groups.html");*/
+				window.location = "events.html";
+			});
+		</script>
+			
+		</div>
+		
+		
+		
+    </body>
+</html>

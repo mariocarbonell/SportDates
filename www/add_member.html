@@ -1,0 +1,225 @@
+<html>
+    <head>
+	    <title>Crear grupo</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+    </head>
+    <body>
+	
+		
+        <div data-role="page" id="add_member_page" data-dialog="false">
+			<div data-role="header">
+				<a href="#" id="barBtnBack" data-role="button" data-icon="back" data-iconpos="notext" class="ui-btn-left">back</a>
+				<h1>Agregar usuario</h1>
+			</div>
+			<div data-role="main">					
+				<div id="searchBox">
+					<ul data-role="listview" data-inset="false" id="selectedSearchList">
+						
+					</ul>
+					<div id="searchForm">
+						<a href="#" id="barBtnClear" data-role="button" data-icon="delete" data-iconpos="notext" style="float:left;">clear</a>
+						<input id="inSearchValue" type="text" style="padding:0 0 0 3%;"/>
+						<a href="#" id="barBtnSearh" data-role="button" data-icon="search" data-iconpos="notext" style="float:left;">menu</a>
+					</div>
+				
+					<ul data-role="listview" data-inset="false" id="searchList">
+						
+					</ul>
+				</div>
+					
+					
+				<button id="btSubmit">Terminado</button>
+			</div>
+			
+			<div data-role="popup" id="popup">
+				<p id="message"><p>
+			</div>
+			
+			
+			<script type="text/x-handlebars-template" id="search_list_template">
+				{{# each groups}}
+					<li style="margin: 5px;" id="{{@index}}">
+						<a href="#">
+							<img src="user_icon.jpg" style="border-radius: 100%;" >
+							<h2>{{userName}}</h2>
+							<p>{{nickName}}</p>
+						</a>
+					</li>
+				{{/ each}}
+			</script>
+			<script type="text/javascript" >
+			var JSONstr;
+			var jsonGroup;
+			$(document).on("pagecreate", "#add_member_page", function(event){
+				console.log("create_group");
+			
+				jsonGroup = Storage.getCurrentGroup();
+			
+			
+				$("#btSubmit").unbind("click").bind("click", function(event){
+					console.log("terminado");
+					
+					
+					var usersId = [];
+					$("#selectedSearchList li").each(function(){
+						usersId.push($(this).attr('id'));
+					});
+						 
+						//console.log(JSON.stringify(usersId));
+					$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/add_member.php",
+						data: {"groupId":jsonGroup["groupId"],"usersId":JSON.stringify(usersId)},
+						crossDomain: true,
+						//cache: false,
+						dataType: "jsonp",
+						//jsonp: "callback",
+						//jsonpCallback: "results",
+						beforeSend: function() {
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							window.location = "group_profile.html";
+						},
+						error: function(data) {
+							console.log("error: " + data);
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+					
+					//console.log("submit preent default");
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					return false;
+				});
+			});
+			
+			
+			
+			$("#barBtnSearh").bind("click", function(event){
+				//console.log("barBtnSearch");
+				var value = $("#inSearchValue").val();
+				$("#searchList").html("");
+				if (value != "") {
+					loadSearchResult(value);
+				}
+			});
+			
+			$("#barBtnClear").bind("click", function(event){
+				//console.log("barBtnClear");
+				$("#searchList").html("");
+				$("#inSearchValue").val("");
+			});
+			
+			$('#searchList').on('click', 'li', function() {
+				var liJson = JSONstr[$(this).attr('id')];
+				
+				var htmlStr = '<li style="margin: 5px;" id="' + liJson['userId'] +'" data-icon="delete"><a href="#"><img src="user_icon.jpg" style="border-radius: 100%;" ><h2>' + liJson['userName'] + '</h2><p>' + liJson['nickName'] + '</p></a><a href="#" onclick="deleteSelected(' + liJson['userId'] + ');"></a></li>';
+				
+				var liStr = $("#selectedSearchList li[id=" + liJson['userId'] + "]").html();
+				
+				if (liStr == undefined) {
+					$("#selectedSearchList").append(htmlStr).listview('refresh');
+					$("#searchList").html("");
+					$("#inSearchValue").val("");
+				}
+				
+				
+			});
+			
+			function showPopup(msg) {
+				$("#message").text(msg);
+				$("#popup").popup("open");
+				$("#userPasswordRe").val("");
+				$("#userPasswordC").val("");
+			}
+			
+			function loadSearchResult(value) {
+				$.ajax({
+					type: "GET",
+					url: "http://mariocarbonell.es/runner/search_user.php",
+					data: {
+						"search_value":value,"restrict":jsonGroup["groupId"]
+					},
+					crossDomain: true,
+					dataType: "jsonp",
+					beforeSend: function(data) {
+						//console.log("beforeSend");
+						//console.log(data);
+						$.mobile.loading('show');
+					},
+					success: function(data) {
+						console.log("success");
+						JSONstr = JSON.parse(data);
+						createUserList(data);
+					},
+					error: function(data) {
+						console.log("error");
+						console.log(data);
+					},
+					complete: function() {
+						$.mobile.loading('hide');
+					}
+				});
+			}
+			function createUserList(data) {
+				source = $("#search_list_template").html();
+				
+				var template = Handlebars.compile(source);
+				
+				var ctx = {};
+				ctx.groups = JSONstr;
+				var result = template(ctx);
+				//console.log("result: " + result);
+				$("#searchList").append(result).listview('refresh');
+			}
+			
+			function deleteSelected(id) {
+				$("#selectedSearchList #" + id).remove();
+			}
+			
+			document.addEventListener("backbutton", function (e) {
+				e.preventDefault();
+				window.location = "group_profile.html";
+			}, false);
+			$("#barBtnBack").bind("click", function(event){
+				/*event.stopPropagation();
+				event.preventDefault();
+				$.mobile.changePage("groups.html");*/
+				window.location = "group_profile.html";
+			});
+		</script>
+		
+		<style type="text/css">
+			#searchBox .ui-input-text {
+				width: 80%;
+				float:left;
+			}
+			#searchBox {
+				margin: 1%;
+				border-top: 1px solid white;
+			}
+			#searchList > li {
+				position:static;
+			}
+		</style>
+			
+		</div>
+		
+		
+		
+    </body>
+</html>

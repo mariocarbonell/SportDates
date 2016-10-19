@@ -1,0 +1,215 @@
+<html>
+    <head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+		
+		
+    </head>
+    <body>
+        <div data-role="page" id="user_profile">
+			<div data-role="header" data-position="fixed">
+				<h1></h1>
+				<a href="#" id="barBtnHome" data-role="button" data-icon="back" data-iconpos="notext" class="ui-btn-left">home</a>
+				<a href="#" id="barBtnEdit" data-role="button" data-icon="edit" data-iconpos="notext" class="ui-btn-right">edit</a>
+			</div>
+			<div data-role="main">
+				<img src="user_icon.jpg">
+				<div>
+					<h1 id="tvUserName"></h1>
+					<h2 id="tvNickName"></h2>
+					<h5 id="titDescription">Descripcion:</h5>
+					<h4 id="tvUserDescription"></h4>
+				</div>
+			</div>
+			
+			<div data-role="popup" id="popup">
+				<p id="message"><p>
+			</div>
+			
+			<!-- END -->
+			<script type="text/javascript" >
+				var user;
+				var backUrl;
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					/*if (data.prevPage.attr('id') == 'groups_page') {
+						saveUser = true;
+					}*/
+				});
+			
+				$(document).on("pagecreate", "#user_profile", function(e){
+					console.log("user profile");
+					
+					var cUser = Storage.getCurrentUser();
+					var sUser = Storage.getUser();
+					if (cUser == null) {
+						console.log("perfil");
+						user = sUser;
+						backUrl = "groups.html";
+					} else {
+					console.log("buscar");
+						user = cUser;
+						backUrl = "search.html";
+					}
+					
+					if (user["userId"] != sUser.userId) {
+						$("#barBtnEdit").remove();
+					}
+					
+					//console.log(user);
+					
+					$("div[data-role=header] h1").text(user.userName);
+					$("#tvUserName").text(user.userName);
+					$("#tvNickName").text(user.nickName);
+					$("#tvUserDescription").text(user.userDescription);
+				});
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					Storage.setCurrentUser(null);
+					window.location = backUrl;
+				}, false);
+				
+				$("#barBtnHome").bind("click", function(event){
+					console.log("home button");
+					Storage.setCurrentUser(null);
+					window.location = backUrl;
+				});
+				$("#barBtnEdit").bind("click", function(event){
+					console.log("edit button");
+					
+					//$("#barBtnEdit").replaceWith('<a href="#" id="barBtnEdit" data-role="button" data-icon="check" data-iconpos="notext" class="ui-btn-right">check</a>');
+					//$("div[data-role=header]").trigger("create");
+					
+					$("#tvUserName").replaceWith('<h5 id="titUserName" style="margin-bottom:1px;">Usuario</h5><input id="inUserName" type="text" style="margin-top:1px;width:100%;">');
+					$("#inUserName").val(user.userName);
+					$("#tvNickName").replaceWith('<h5 id="titNickName" style="margin-bottom:1px;">Nick</h5><input id="inNickName" type="text" style="margin-top:1px;width:100%;">');
+					$("#inNickName").val(user.nickName);
+					
+					$('<h5 id="titUserPasswordCu" style="margin-bottom:1px;">Password actual</h5><input id="inUserPasswordCu" type="password" style="margin-top:1px;width:100%;">').insertAfter("#inNickName");
+					$('<h5 id="titUserPassword" style="margin-bottom:1px;">Password</h5><input id="inUserPassword" type="password" style="margin-top:1px;width:100%;">').insertAfter("#inUserPasswordCu");
+					$('<h5 id="titUserPasswordRe" style="margin-bottom:1px;">Repetir password</h5><input id="inUserPasswordRe" type="password" style="margin-top:1px;width:100%;">').insertAfter("#inUserPassword");
+					
+					$("#titDescription").remove();
+					$("#tvUserDescription").replaceWith('<h5 id="titUserDescription" style="margin-bottom:1px;">Descripción</h5><textarea id="inUserDescription" style="margin-top:1px;width:100%;">');
+					$("#inUserDescription").val(user.userDescription);
+					
+					$('<div id="btns"><a href="#" id="barBtnCancel" data-role="button" data-icon="delete" data-iconpos="notext">delete</a><a href="#" id="barBtnCheck" data-role="button" data-icon="check" data-iconpos="notext">check</a></div>').insertAfter("#inUserDescription");
+					
+					$("div[data-role=main] div").trigger('create');
+					
+					$("#barBtnCancel").bind("click", function(event){
+						location.reload();
+					});
+					$("#barBtnCheck").bind("click", function(event){
+						console.log(user.userPassword);
+						var values = {};
+						values["userId"] = user.userId;
+						if ($("#inUserName").val() != "" && $("#inNickName").val() != "") {
+							values["userName"]=$("#inUserName").val();
+							user.userName = $("#inUserName").val();
+							values["nickName"]=$("#inNickName").val();
+							user.nickName = $("#inNickName").val();
+							values["userDescription"]=$("#inUserDescription").val();
+							user.userDescription = $("#inUserDescription").val();
+							
+							if ($("#inUserPassword").val() != "" &&
+							user.userPassword === $("#inUserPasswordCu").val() 
+							&& $("#inUserPassword").val() === $("#inUserPasswordRe").val()) {
+								console.log("change password");
+								values["userPassword"]=$("#inUserPassword").val();
+								user.userPassword = $("#inUserPassword").val();
+								Storage.setUser(user);
+								updateUser(values);
+							} else {
+								if($("#inUserPasswordRe").val() == "" && $("#inUserPasswordCu").val() == "" && $("#inUserPassword").val() == ""){
+									console.log("change");
+									Storage.setUser(user);
+									updateUser(values);
+								} else {
+									$("#message").text("Para cambiar la contrase&ntilde;a, se debe introducir la contrase&ntilde;a actual e introducir la nueva dos veces");
+									$("#popup").popup("open");
+								}
+							}
+							
+						} else {
+							$("#message").text("El campo NICK y el campo NOMBRE son obligatorios");
+							$("#popup").popup("open");
+						}
+						
+					});
+					
+					function updateUser(values) {
+						$.ajax({
+							type: "GET",
+							url: "http://mariocarbonell.es/runner/update_user.php",
+							data: values,
+							crossDomain: true,
+							dataType: "jsonp",
+							beforeSend: function() {
+								$.mobile.loading('show');
+							},
+							success: function(data) {
+								location.reload();
+							},
+							error: function(data) {
+								console.log("error: " + data);
+								console.log(data);
+							},
+							complete: function() {
+								$.mobile.loading('hide');
+							}
+						});
+					}
+
+				});
+				
+			</script>			
+			<style type="text/css">
+				#btns {
+					/*display: block;*/
+					margin: 0 auto;
+				}
+				#btns a{
+					display: inline-block;
+					/*margin: 0 auto;*/
+					width:20%;
+				}
+			
+				div[data-role=main] > img {
+					border-radius: 100%;
+					display: block;
+					margin: 0 auto;
+				}
+				#tvUserName{
+					margin-bottom:0px;
+				}
+				#tvNickName {
+					margin-top:0px;
+				}
+				#titDescription{
+					margin-bottom:0px;
+				}
+				#tvUserDescription {
+					margin-top:0px;
+				}
+				
+			</style>
+		</div>
+		
+    </body>
+</html>

@@ -1,0 +1,217 @@
+<html>
+    <head>
+	    <title>Grupos</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+		
+		
+    </head>
+    <body>
+        <div data-role="page" id="groups_page">
+			<div data-role="header">
+				<h1></h1>
+				<a href="#" id="barBtnRefresh" data-role="button" data-icon="refresh" data-iconpos="notext" class="ui-btn-left">Update</a>
+				<div class="ui-btn-right">
+					<a href="#" id="barBtnPetitions" data-rel="popup" data-role="button" data-icon="star" data-iconpos="notext" >petitions</a>
+					<a href="#" id="barBtnSearch" data-rel="popup" data-role="button" data-icon="eye" data-iconpos="notext">search</a>
+					<a href="#divOptionsMenu" id="barBtnOptions" data-rel="popup" data-role="button" data-icon="gear" data-iconpos="notext">menu</a>
+				</div>
+			</div>
+			<div data-role="main">
+				<ul data-role="listview" data-insert="true" id="groupsList">
+					<!--<li style="margin: 5px;">
+						<a href="#">
+							<img src="icon.jpg" style="border-radius: 100%;">
+							<h2>Broken Bells</h2>
+							<p>Broken Bells</p>
+						</a>
+					</li>-->
+				</ul>
+				<button id="btnAddGroup" class="floatingBtn">+</button>
+			</div>
+			
+			<!-- MENU CONTEXTUAL DE OPCIONES -->
+			<div data-role="popup" id="divOptionsMenu">
+				<ul data-role="listview" data-inset="true" style="min-width:210px;">
+					<li data-role="list-divider">Choose an action</li>
+					<li><a href="#" id="mnuOpProfile">Perfil</a></li>
+					<li><a href="#" id="mnuOpInfo">Acerca de</a></li>
+					<li><a href="#" id="mnuOpLogout">Cerrar sesion</a></li>
+				</ul>
+				<script type="text/javascript" >
+					$("#mnuOpLogout").bind("click", function(event){
+						console.log("mnuOpLogout");
+						Storage.clear();
+						$.mobile.changePage("index.html");
+					});
+					$("#mnuOpProfile").bind("click", function(event){
+						console.log("mnuOpProfile");
+						$.mobile.changePage("user_profile.html");
+					});
+					$("#mnuOpInfo").bind("click", function(event){
+						console.log("mnuOpInfo");
+						$.mobile.changePage("app_info.html");
+					});
+				</script>
+			</div>
+			<!-- END -->
+			<script type="text/x-handlebars-template" id="groups_list_template">
+				{{# each groups}}
+					<li style="margin: 5px;" id="{{@index}}">
+						<a href="#">
+							<img src="group_icon.jpg" style="border-radius: 100%;" >
+							<h2>{{groupName}}</h2>
+							<p>{{groupDescription}}</p>
+						</a>
+					</li>
+				{{/ each}}
+			</script>
+			<script src="js/handlebars-v4.0.5.js"></script>
+			<script type="text/javascript" >
+				var JSONstr;
+				/*$(document).on( "pagebeforechange", function ( event, data ) {
+					console.log("pagebeforechange, toPage: " + data.toPage[0].id);
+					if (Storage.session() == true && data.toPage[0].id == "login_page") {
+						event.preventDefault();
+					}
+				});*/
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					//if (data.prevPage.attr('id') == '')
+					
+					/*if(data.prevPage.attr('id') != "groups_page") {
+					console.log("prevPage: " + data.prevPage.attr('id'));
+						data.prevPage.remove();
+					}*/
+				});
+				
+				$(document).on("pageshow", "#groups_page", function(event, data){
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					//if (data.prevPage.attr('id') == '')
+					console.log("pageshow");
+					/*if(data.prevPage.attr('id') != "groups_page") {
+					console.log("prevPage: " + data.prevPage.attr('id'));
+						$(data.prevPage).remove();
+					}*/
+				});
+			
+				$(document).on("pagecreate", "#groups_page", function(event, data){
+					console.log("groups page");
+					
+					$("div[data-role=header] h1").text(Storage.getUser().userName);
+					
+					$("head").append('<link rel="stylesheet" href="css/floatingbutton_style.css">');
+					$("#btnAddGroup").removeClass().addClass("floatingBtn");// ELIMINA LES CLASES STANDARD DE JQuery Mobile I APLICA LA PROPIA
+					
+					loadGrupsList();
+					
+					$("#barBtnRefresh").bind("click", function(event){
+						console.log("barBtnRefresh");
+						loadGrupsList();
+					});
+					$("#barBtnOptions").bind("click", function(event){
+						//console.log("barBtnOptions");
+						$("#divOptionsMenu").popup();
+					});
+					$("#barBtnSearch").bind("click", function(event){
+						/*event.stopPropagation();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						$.mobile.changePage("search.html");*/
+						
+						window.location = "search.html";
+					});
+					$("#barBtnPetitions").bind("click", function(event){
+						/*event.preventDefault();
+						event.stopPropagation();
+						event.stopImmediatePropagation();
+						if(event.handled !== true) {
+							$.mobile.changePage("petitions.html");
+							event.handled = true;
+						}*/
+						
+						window.location = "petitions.html";
+					});
+					
+//					$("#btnAddGroup").unbind('click').bind("click", function(event){
+					$("#btnAddGroup").on("click", function(event){
+						console.log("btnAddGroup");
+						/*event.stopPropagation();
+						event.stopImmediatePropagation();
+						event.preventDefault();
+						$.mobile.changePage("create_group.html");*/
+						
+						window.location = "create_group.html";
+					});
+					
+					$('#groupsList').on('click', 'li', function() {
+						//console.log("current group:");
+						//console.log(JSONstr[$(this).attr('id')]["groupId"]);
+						Storage.setCurrentGroup(JSONstr[$(this).attr('id')]);
+						window.location = "events.html";
+					});
+					
+					function loadGrupsList() {
+						$.ajax({
+							type: "GET",
+							url: "http://mariocarbonell.es/runner/get_groups.php",
+							data: {"userId":Storage.getUser().userId},
+							crossDomain: true,
+							dataType: "jsonp",
+							beforeSend: function(data) {
+								console.log("beforeSend");
+								console.log(data);
+								$.mobile.loading('show');
+							},
+							success: function(data) {
+								console.log("success");
+								console.log(data);
+								JSONstr = JSON.parse(data);
+								createLoadList();
+							},
+							error: function(data) {
+								console.log("error");
+								console.log(data);
+							},
+							complete: function() {
+								$.mobile.loading('hide');
+							}
+						});
+					};
+					
+					function createLoadList() {
+						source = $("#groups_list_template").html();
+						
+						var template = Handlebars.compile(source);
+						
+						var ctx = {};
+						ctx.groups = JSONstr;
+						var result = template(ctx);
+						//console.log("result: " + result);
+						$("#groupsList").html("");
+						$("#groupsList").append(result).listview('refresh');
+					}
+				});
+				
+				/*document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+				}, false);*/
+			</script>
+			
+		</div>
+		
+    </body>
+</html>

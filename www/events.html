@@ -1,0 +1,227 @@
+<html>
+    <head>
+	    <title>Grupos</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+		
+		
+    </head>
+    <body>
+        <div data-role="page" id="events_page">
+			<div data-role="header">
+				<h1></h1>
+				<div class="ui-btn-left">
+					<a href="#" id="barBtnRefresh" data-role="button" data-icon="refresh" data-iconpos="notext">Update</a>
+					<a href="#" id="barBtnBack" data-role="button" data-icon="back" data-iconpos="notext"> back</a>
+				</div>
+				<div class="ui-btn-right">
+					<a href="#divOptionsMenu" id="barBtnOptions" data-rel="popup" data-role="button" data-icon="gear" data-iconpos="notext">menu</a>
+				</div>
+			</div>
+			<div data-role="main">
+				<ul data-role="listview" data-insert="true" id="eventsList">
+					
+				</ul>
+				<button id="btnAddEvent" class="floatingBtn">+</button>
+			</div>
+			<!-- MENU CONTEXTUAL DE OPCIONES -->
+			<div data-role="popup" id="divOptionsMenu">
+				<ul data-role="listview" data-inset="true" style="min-width:210px;">
+					<li data-role="list-divider">Choose an action</li>
+					<li><a href="#" id="mnuOpProfile">Perfil</a></li>
+				</ul>
+				<script type="text/javascript" >
+					$("#mnuOpProfile").bind("click", function(event){
+						console.log("mnuOpProfile");
+						window.location = "group_profile.html";
+					});
+				</script>
+			</div>
+			<!-- END -->
+			<script type="text/x-handlebars-template" id="events_list_template">
+				{{# each events}}
+					<li>
+						<div id="nameBox">
+							<h1 onClick="editEvent({{@index}})">{{eventName}}</h1>
+							<p>{{userCreatorName}}</p>
+							<h2>{{activityName}}</h2>
+						</div>
+						<div id="contentBox">
+							<img src="event_icon.jpg" style="border-radius: 100%;" onClick="editEvent({{@index}})">
+							<p>
+								{{eventDescription}}
+							</p>
+						</div>
+						<div id="footBox">
+							<h5>{{startPlace}} - {{startTime}}</h5>
+						</div>
+					</li>
+				{{/ each}}
+			</script>
+			<script src="js/handlebars-v4.0.5.js"></script>
+			<script type="text/javascript" >
+				//var groupJson;
+				var eventsJSON;
+				/*$(document).on( "pagebeforechange", function ( event, data ) {
+					console.log("pagebeforechange, toPage: " + data.toPage[0].id);
+					if (Storage.session() == true && data.toPage[0].id == "login_page") {
+						event.preventDefault();
+					}
+				});*/
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					//if (data.prevPage.attr('id') == '')
+					
+					/*if(data.prevPage.attr('id') != "groups_page") {
+					console.log("prevPage: " + data.prevPage.attr('id'));
+						data.prevPage.remove();
+					}*/
+					
+					
+				});
+				
+				$(document).on("pageshow", "#groups_page", function(event, data){
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					//if (data.prevPage.attr('id') == '')
+					//console.log("pageshow");
+					/*if(data.prevPage.attr('id') != "groups_page") {
+					console.log("prevPage: " + data.prevPage.attr('id'));
+						$(data.prevPage).remove();
+					}*/
+				});
+			
+				$(document).on("pagecreate", "#events_page", function(event, data){
+					console.log("events page");
+					var groupJson = Storage.getCurrentGroup();
+					console.log(groupJson["groupName"]);
+					
+					loadEventsList();
+					
+					$("div[data-role=header] h1").text(groupJson["groupName"]);
+					
+					$("head").append('<link rel="stylesheet" href="css/floatingbutton_style.css">');
+					$("#btnAddEvent").removeClass().addClass("floatingBtn");// ELIMINA LES CLASES STANDARD DE JQuery Mobile I APLICA LA PROPIA
+					
+					
+					$("#barBtnRefresh").bind("click", function(event){
+						console.log("barBtnRefresh");
+						loadEventsList();
+					});
+					
+//					$("#btnAddGroup").unbind('click').bind("click", function(event){
+					$("#btnAddEvent").on("click", function(event){
+						console.log("btnAddEvent");
+						
+						window.location = "create_event.html";
+					});
+					
+					function loadEventsList() {
+						$.ajax({
+							type: "GET",
+							url: "http://mariocarbonell.es/runner/get_events.php",
+							data: {"groupId":groupJson["groupId"]},
+							crossDomain: true,
+							dataType: "jsonp",
+							beforeSend: function(data) {
+								//console.log("beforeSend");
+								//console.log(data);
+								$.mobile.loading('show');
+							},
+							success: function(data) {
+								console.log("success");
+								console.log(data);
+								eventsJSON = JSON.parse(data);
+								createEventsList();
+							},
+							error: function(data) {
+								console.log("error");
+								console.log(data);
+							},
+							complete: function() {
+								$.mobile.loading('hide');
+							}
+						});
+					};
+					
+					function createEventsList() {
+						source = $("#events_list_template").html();
+						
+						var template = Handlebars.compile(source);
+						
+						var ctx = {};
+						ctx.events = eventsJSON;
+						var result = template(ctx);
+						//console.log("result: " + result);
+						$("#eventsList").html("");
+						$("#eventsList").append(result).listview('refresh');
+					}
+				});
+				
+				$("#barBtnBack").bind("click", function(event){
+					console.log("back button");					
+					window.location = "groups.html";
+				});
+				
+				function editEvent(pos) {
+					Storage.setCurrentEvent(eventsJSON[pos]);
+					window.location = "event_profile.html";
+				}
+				
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					window.location = "groups.html";
+				}, false);
+			</script>
+			<style type="text/css">
+				#events_page {
+					background-color:#D2D2D2;
+				}
+				#eventsList > li {
+					width: 85%;
+					margin: 5px auto 5px auto;
+				}
+				#nameBox {
+					border-bottom-width: 2px;
+					border-bottom-style: solid;
+					border-bottom-color: #D2D2D2;
+				}
+				#contentBox {
+					border-bottom-width: 2px;
+					border-bottom-style: solid;
+					border-bottom-color: #D2D2D2;
+				}
+				#contentBox > img {
+					display: inline-block;
+					width:50%;
+				}
+				#contentBox > p {
+					display: inline-block;
+					width:50%;
+					word-wrap: break-word;
+					vertical-align: top;
+					white-space: pre-line;
+					text-align: justify;
+				}
+				#footBox > h5 {
+					display: inline-block;
+				}
+				
+			</style>
+			
+		</div>
+		
+    </body>
+</html>

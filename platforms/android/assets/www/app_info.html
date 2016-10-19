@@ -1,0 +1,106 @@
+<html>
+    <head>
+	    <title>Login</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		
+		
+    </head>
+    <body>
+		
+        <div data-role="page" id="info_page">
+			<div data-role="header">
+				<h1>Info</h1>
+				<a href="#" id="barBtnHome" data-role="button" data-icon="home" data-iconpos="notext" class="ui-btn-left">home</a>
+			</div>
+			<div data-role="main">
+				<img id="infoIcon" src="logo.jpg">
+				<h1>Notificar error o sugerencia al programador:</h1>
+				
+				<label>E-mail:</label>
+				<input type="text" id="sender" name="usuario" />
+				
+				<label>Asunto:</label>
+				<input type="text" id="subject" name="usuario" />
+				
+				<label>Explicación:</label>
+				<textarea id="content" ></textarea>
+				
+				<button id="btnSend">Send</button>
+			</div>
+			
+			
+			<div data-role="popup" id="popup">
+				<p>Los campos del formulario son obligatorios<p>
+			</div>
+			<script type="text/javascript" >
+				$(document).on( "pagebeforechange", function ( event, data ) {
+					
+				});
+				
+				$(document).on("pagecreate", "#info_page", function(event, data){
+					console.log("info");
+					
+					$("#btnSend").bind("click", function(event){
+						var sender = $("#sender").val();
+						var subject = $("#subject").val();
+						var content = $("#content").val();
+						
+						if (sender != "" && subject != "" && content != "") {
+							
+							$.ajax({
+								type: "GET",
+								url: "http://mariocarbonell.es/runner/app_info.php",
+								data: {
+									"userId":Storage.getUser().userId,"sender":sender,"subject":subject,"content":content
+								},
+								crossDomain: true,
+								dataType: "jsonp",
+								beforeSend: function() {
+									$.mobile.loading('show');
+								},
+								success: function(data) {
+									window.location = "groups.html";
+								},
+								error: function(data) {
+									console.log("error: " + data);
+									console.log(data);
+								},
+								complete: function() {
+									$.mobile.loading('hide');
+								}
+							});
+						} else {
+							$("#popup").popup("open");
+						}
+					});
+				});
+				$("#barBtnHome").bind("click", function(event){
+					console.log("home button");
+					
+					window.location = "groups.html";
+				});
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					window.location = "groups.html";
+				}, false);
+			</script>
+			<style type="text/css">
+				#infoIcon {
+					display: block;
+					margin: 0 auto;
+				}				
+			</style>
+		</div>
+		
+		
+    </body>
+</html>

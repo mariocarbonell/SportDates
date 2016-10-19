@@ -1,0 +1,124 @@
+<html>
+    <head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		
+		
+    </head>
+    <body>
+		
+        <div data-role="page" id="login_page" style="visibility:hidden;">
+			<div data-role="header">
+				<h1>SportDates</h1>
+			</div>
+			<div data-role="main">
+				<form id="loginForm">
+					<label>Usuario</label>
+					<input type="text" id="userName" name="usuario" />
+					
+					<label>Password</label>
+					<input type="password" id="userPassword" name="password" />
+					
+					<button id="btnLogin">Enviar</button>
+					<a id="btnCreate">Crear cuenta</a>
+				</form>
+			</div>
+			
+			
+			<div data-role="popup" id="popup">
+				<p>El usuario o contrase&Ntilde;a es erroneo<p>
+			</div>
+			<script type="text/javascript" >
+				$(document).on( "pagebeforechange", function ( event, data ) {
+					//console.log("pagebeforechange, toPage: " + data.toPage[0].id);
+					/*if (Storage.session() == false && data.toPage[0].id == "groups_page") {
+						event.preventDefault();
+					}*/console.log("pagebeforeshow");
+					if (Storage.session() == true) {
+						console.log("sesion true");
+						//$.mobile.changePage("groups.html");
+						window.location = "groups.html";
+					} else {
+						$("#login_page").removeAttr("style");
+					}
+				});
+				
+				//$(document).ready(function(){
+				$(document).on("pagecreate", "#login_page", function(event, data){
+					console.log("index");
+					
+					//console.log(Storage.getCurrentUser()==null);
+					
+					/*if (Storage.session() == true) {
+						//$.mobile.changePage("groups.html");
+						window.location = "groups.html";
+					}*/
+					
+					$("#btnLogin").bind("click", function(event){
+						
+						var userName = $("#userName").val();
+						var userPassword = $("#userPassword").val();
+						$("#userPassword").val("");
+
+						if (userName.length != 0 && userPassword.length != 0) {
+						console.log("click");
+							$.ajax({
+								type: "GET",
+								url: "http://mariocarbonell.es/runner/validate_user.php",
+									data: {"userName":userName.toLowerCase(),"userPassword":userPassword},
+									crossDomain: true,
+									dataType: "jsonp",
+									beforeSend: function() {
+										$.mobile.loading('show');
+									},
+									success: function(data) {
+										if (data == -1) {
+											showPopup();
+										} else {
+											var us = User.fromJSON(data);
+											//console.log(us);
+											Storage.setUser(us);
+											//console.log("test: " + window.localStorage.getItem("storedNickName"));
+											event.stopPropagation();
+											event.preventDefault();
+											$.mobile.changePage("groups.html");
+										}
+									},
+									error: function(data) {
+										console.log("error");
+										console.log(data);
+									},
+									complete: function() {
+										$.mobile.loading('hide');
+									}
+							});
+						}
+						return false;
+					});
+					$("#btnCreate").bind("click", function(event){
+						console.log("btncreate");
+						event.stopPropagation();
+						event.preventDefault();
+						$.mobile.changePage("create_user.html");
+					});
+					
+					function showPopup() {
+						$("#popup").popup("open");
+						$("#userPassword").val("");
+					}
+				});
+			</script>
+
+		</div>
+		
+		
+    </body>
+</html>

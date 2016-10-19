@@ -1,0 +1,119 @@
+<html>
+    <head>
+	    <title>Crear cuenta</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+    </head>
+    <body>
+	
+		
+        <div data-role="page" id="create_user_page" data-dialog="false">
+			<div data-role="header">
+				<a href="#" id="barBtnHome" data-role="button" data-icon="home" data-iconpos="notext" class="ui-btn-left">home</a>
+				<h1>Crear usuario</h1>
+			</div>
+			<div data-role="main">
+				<form id="createForm">
+					<label>Nombre completo:</label>
+					<input type="text" id="userNameC" name="usuario" />
+					
+					<label>Password:</label>
+					<input type="password" id="userPasswordC" name="password" />
+					<label>Confirme password:</label>
+					<input type="password" id="userPasswordRe" name="passwordRe" />
+					
+					<label>Nickname:</label>
+					<input type="text" id="nickName" name="nickName" />
+					
+					
+					
+					<button id="btSubmit">Crear</button>
+				</form>
+			</div>
+			
+			<div data-role="popup" id="popup">
+				<p id="message"><p>
+			</div>
+			
+			<script type="text/javascript" >
+			
+			$(document).on("pagecreate", "#create_user_page", function(event){
+				//console.log("create_user");
+			
+				$("#btSubmit").bind("click", function(event){
+					var userName = $("#userNameC").val();
+					var userPassword = $("#userPasswordC").val();
+					var nickName = $("#nickName").val();
+					if (userName.length != 0 && userPassword.length != 0 && nickName.length != 0) {
+						
+						if (userPassword == $("#userPasswordRe").val()) {
+							$.ajax({
+								type: "GET",
+								url: "http://mariocarbonell.es/runner/create_user.php",
+								data: {"userName":userName.toLowerCase(),"userPassword":userPassword,"nickName":nickName.toLowerCase()},
+								crossDomain: true,
+								//cache: false,
+								dataType: "jsonp",
+								//jsonp: "callback",
+								//jsonpCallback: "results",
+								beforeSend: function() {
+									$.mobile.loading('show');
+								},
+								success: function(data) {
+									
+									if (data == 1) {
+										showPopup("Se ha creado el usuario");										
+										window.location = "index.html";
+									} else if (data == 0) {
+										showPopup("Error al crear el usuario");
+									} else if (data == -1) {
+										showPopup("El nickname ya esta en uso, elija otro");
+									}
+								},
+								error: function(data) {
+									//console.log("error: " + data);
+									//console.log(data);
+								},
+								complete: function() {
+									$.mobile.loading('hide');
+								}
+							});
+						} else {
+							//console.log("Ambas contrase&Ntilde;as no son iguales");
+							showPopup("Ambas contrase&Ntilde;as no son iguales");
+						}
+					}
+					return false;
+				});
+			});
+			
+			document.addEventListener("backbutton", function (e) {
+				e.preventDefault();
+				window.location = "index.html";
+			}, false);
+			$("#barBtnHome").bind("click", function(event){
+				/*event.stopPropagation();
+				event.preventDefault();
+				$.mobile.changePage("groups.html");*/
+				window.location = "index.html";
+			});
+			
+			function showPopup(msg) {
+				$("#message").text(msg);
+				$("#popup").popup("open");
+				$("#userPasswordRe").val("");
+				$("#userPasswordC").val("");
+			}
+		</script>
+			
+		</div>
+		
+		
+		
+    </body>
+</html>

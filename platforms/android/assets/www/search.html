@@ -1,0 +1,172 @@
+<html>
+    <head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="jqm/jquery.mobile-1.4.5.min.css">
+		<link rel="stylesheet" href="css/floatingbutton_style.css">
+		
+		
+		
+		
+		<script type="text/javascript" src="cordova.js"></script>
+		<script src="jqm/jquery.min.js"></script>
+		<script src="jqm/jquery.mobile-1.4.5.min.js"></script>
+		
+		
+		
+		<script src="js/User.js"></script>
+		<script src="js/Storage.js"></script>
+		<script src="js/handlebars-v4.0.5.js"></script>
+		
+		
+		
+    </head>
+    <body>
+        <div data-role="page" id="search_page">
+			<div data-role="header" data-position="fixed">
+				<h1>Buscar usuario</h1>
+				<a href="#" id="barBtnHome" data-role="button" data-icon="home" data-iconpos="notext" class="ui-btn-left">home</a>
+			</div>
+			<div data-role="main">
+				<div id="usersBox">
+					<a href="#" id="btnClear" data-role="button" data-icon="delete" data-iconpos="notext" style="float:left;">clear</a>
+					<input id="inSearchValue" type="text" style="padding:0 0 0 3%;"/>
+					<a href="#" id="btnSearch" data-role="button" data-icon="search" data-iconpos="notext" style="float:left;">menu</a>
+				</div>
+				<ul data-role="listview" data-insert="true" id="searchList">
+				
+				</ul>
+			</div>
+			
+			<!-- END -->
+			<script type="text/x-handlebars-template" id="search_list_template">
+				{{# each users}}
+					<li style="margin: 5px;" id="{{@index}}">
+						<a href="#">
+							<img src="user_icon.jpg" style="border-radius: 100%;" >
+							<h2>{{userName}}</h2>
+							<p>{{nickName}}</p>
+						</a>
+					</li>
+				{{/ each}}
+			</script>
+			<script type="text/javascript" >
+				var JSONstr;
+				$(document).on( "pagebeforeshow", function ( event, data ) {
+					//console.log("pagebeforeshow, from apge: " + data.prevPage.attr('id'));
+					/*if (data.prevPage.attr('id') == 'groups_page') {
+						saveUser = true;
+					}*/
+				});
+			
+				$(document).on("pagecreate", "#search_page", function(e){
+					console.log("search page");
+					
+					$("#btnClear").click(function(event){
+						console.log("barBtnClear");
+						$("#searchList").html("");
+						$("#inSearchValue").val("");
+						event.preventDefault();
+						return false;
+					});
+					$("#btnSearch").click(function(event){
+						console.log("btnSearch");
+						var value = $("#inSearchValue").val();
+						$("#searchList").html("");
+						console.log(value);
+						if(value != "") {
+							loadSearchResult(value);
+						}
+						return false;
+					});
+					
+					$('#searchList').on('click', 'li', function() {
+						console.log(JSONstr[$(this).attr('id')]);
+						
+							//window.localStorage.setItem("selected_user_json",JSONstr[$(this).attr('id')]);
+							//event.stopPropagation();
+							//event.preventDefault();
+							//$.mobile.changePage("groups.html");
+							
+						Storage.setCurrentUser(JSONstr[$(this).attr('id')]);
+						window.location = "user_profile.html";
+					});
+				});
+				function loadSearchResult(value) {
+					console.log("loadSearch");
+					$.ajax({
+						type: "GET",
+						url: "http://mariocarbonell.es/runner/search_user.php",
+						data: {"search_value":value},
+						crossDomain: true,
+						dataType: "jsonp",
+						beforeSend: function(data) {
+							console.log("beforeSend");
+							console.log(data);
+							$.mobile.loading('show');
+						},
+						success: function(data) {
+							console.log("success");
+							JSONstr = JSON.parse(data);
+							createUserList();
+						},
+						error: function(data) {
+							console.log("error");
+							console.log(data);
+						},
+						complete: function() {
+							$.mobile.loading('hide');
+						}
+					});
+					return false;
+				};
+				
+				function createUserList() {
+					source = $("#search_list_template").html();
+					
+					var template = Handlebars.compile(source);
+					
+					var ctx = {};
+					ctx.users = JSONstr;
+					var result = template(ctx);
+					//console.log("result: " + result);
+					$("#searchList").append(result).listview('refresh');
+					return false;
+				};
+				document.addEventListener("backbutton", function (e) {
+					e.preventDefault();
+					window.location = "groups.html";
+				}, false);
+				
+				$("#barBtnHome").bind("click", function(event){
+					console.log("home button");
+					$("#searchList").html("");
+					$("#inSearchValue").val("");
+					/*event.stopPropagation();
+					event.preventDefault();
+					$.mobile.changePage("groups.html");*/
+					
+					window.location = "groups.html";
+				});
+				
+			</script>
+			<style type="text/css">
+			#usersBox > .ui-input-text {
+				width: 80%;
+				float:left;
+			}
+			#usersBox {
+				position: fixed!important;
+				z-index: 1000!important;
+				top:7% !important;
+				width: 100% !important;
+				background-color: white;
+			}
+			#searchList {
+				margin-top: 15%;
+			}
+		</style>
+			
+		</div>
+		
+    </body>
+</html>
